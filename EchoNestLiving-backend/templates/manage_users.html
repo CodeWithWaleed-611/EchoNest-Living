@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-top: 20px;
+            font-size: 2.5rem;
+        }
+
+        .user-management {
+            max-width: 1000px;
+            margin: 20px auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        table th, table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        table th {
+            background-color: #2c3e50;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        table tr:hover {
+            background-color: #f1f1f1;
+            transition: background-color 0.3s ease;
+        }
+
+        .actions button {
+            margin-right: 5px;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+        }
+
+        .actions button.edit {
+            background-color: #f39c12;
+            color: #fff;
+        }
+
+        .actions button.edit:hover {
+            background-color: #e67e22;
+        }
+
+        .actions button.delete {
+            background-color: #e74c3c;
+            color: #fff;
+        }
+
+        .actions button.delete:hover {
+            background-color: #c0392b;
+        }
+
+        .add-user-form {
+            background-color: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .add-user-form h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            font-size: 1.8rem;
+        }
+
+        .add-user-form input {
+            padding: 10px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            width: 200px;
+            transition: border-color 0.3s ease;
+        }
+
+        .add-user-form input:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+
+        .add-user-form button {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+        }
+
+        .add-user-form button:hover {
+            background-color: #2980b9;
+        }
+
+        @media (max-width: 768px) {
+            .add-user-form input {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+
+            .add-user-form button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="user-management">
+        <h1>User Management</h1>
+
+        <!-- Table to Display Users -->
+        <table id="user-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Users will be dynamically added here -->
+            </tbody>
+        </table>
+
+        <!-- Form to Add/Edit Users -->
+        <div class="add-user-form">
+            <h2>Add/Edit User</h2>
+            <input type="text" id="user-id" placeholder="ID" disabled>
+            <input type="text" id="username" placeholder="Username">
+            <input type="password" id="user-password" placeholder="Password">
+            <input type="password" id="confirm-password" placeholder="Confirm Password">
+            <input type="text" id="user-role" placeholder="Role">
+            <button id="save-user">Save User</button>
+        </div>
+    </div>
+
+    <script>
+        // Fetch all users and render the table
+        async function fetchUsers() {
+            const response = await fetch('/api/users');
+            const users = await response.json();
+            return users;
+        }
+
+        // Render users in the table
+        async function renderUsers() {
+            const users = await fetchUsers();
+            const userTableBody = document.querySelector("#user-table tbody");
+            userTableBody.innerHTML = "";
+            users.forEach(user => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${user.id}</td>
+                    <td>${user.username}</td>
+                    <td>${user.role}</td>
+                    <td class="actions">
+                        <button class="edit" onclick="editUser(${user.id})">Edit</button>
+                        <button class="delete" onclick="deleteUser(${user.id})">Delete</button>
+                    </td>
+                `;
+                userTableBody.appendChild(row);
+            });
+        }
+
+        // Add or update a user
+        async function saveUser() {
+            const id = document.getElementById("user-id").value;
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("user-password").value;
+            const confirmPassword = document.getElementById("confirm-password").value;
+            const role = document.getElementById("user-role").value;
+
+            if (password !== confirmPassword) {
+                alert("Passwords do not match!");
+                return;
+            }
+
+            const user = { username, password, confirm_password: confirmPassword, role };
+
+            if (id) {
+                // Update existing user
+                await fetch(`/api/users/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(user)
+                });
+            } else {
+                // Add new user
+                await fetch('/api/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(user)
+                });
+            }
+
+            // Clear the form and re-render the table
+            clearForm();
+            await renderUsers();
+        }
+
+        // Edit a user
+        async function editUser(id) {
+            const response = await fetch(`/api/users/${id}`);
+            const user = await response.json();
+            document.getElementById("user-id").value = user.id;
+            document.getElementById("username").value = user.username;
+            document.getElementById("user-password").value = user.password;
+            document.getElementById("confirm-password").value = user.password;
+            document.getElementById("user-role").value = user.role;
+        }
+
+        // Delete a user
+        async function deleteUser(id) {
+            await fetch(`/api/users/${id}`, { method: 'DELETE' });
+            await renderUsers();
+        }
+
+        // Clear the form
+        function clearForm() {
+            document.getElementById("user-id").value = "";
+            document.getElementById("username").value = "";
+            document.getElementById("user-password").value = "";
+            document.getElementById("confirm-password").value = "";
+            document.getElementById("user-role").value = "";
+        }
+
+        // Attach event listener to the save button
+        document.getElementById("save-user").addEventListener("click", saveUser);
+
+        // Initial render
+        renderUsers();
+    </script>
+</body>
+</html>

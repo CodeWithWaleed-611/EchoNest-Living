@@ -1,0 +1,6 @@
+pyttsx3
+SpeechRecognition
+PyAudio
+python-socketio
+flask-socketio
+websocket-client
